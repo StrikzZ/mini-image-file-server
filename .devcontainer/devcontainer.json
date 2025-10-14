@@ -1,0 +1,14 @@
+{
+  "name": "DevContainer imageserver",
+  "dockerComposeFile": "./docker-compose.yaml",
+  "service": "imageserver",
+  "workspaceFolder": "/app",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+	    "ms-python.python",
+		"donjayamanne.python-extension-pack"
+      ]
+    }
+  }
+}

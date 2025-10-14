@@ -1,0 +1,12 @@
+services:
+  imageserver:
+    build:
+      dockerfile: ./Dockerfile
+    image: imageserver
+    container_name: imageserver
+    stdin_open: true
+    tty: true
+    volumes:
+      - ../app:/app
+    ports:
+      - 127.0.0.1:8080:8080
