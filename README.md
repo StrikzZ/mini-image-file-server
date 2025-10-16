@@ -76,7 +76,7 @@ you can also interact with the server over CLI — for example using `curl`.
 The `/upload` endpoint accepts a single file through a multipart form request:
 
 ```bash
-curl -X POST http://<your-server>/upload -F "file=@example.png"
+curl -X POST https://<your-server>/upload -F "file=@example.png"
 ```
 
 This will return a JSON response containing metadata and access URLs, for example:
@@ -84,15 +84,15 @@ This will return a JSON response containing metadata and access URLs, for exampl
 {
   "type": "image",
   "id": "a9d8b4e7c3f24e0f8b6a1d9f6a34bcd1",
-  "page_url": "http://<your-server>/i/a9d8b4e7c3f24e0f8b6a1d9f6a34bcd1",
-  "raw_url": "http://<your-server>/raw/image/a9d8b4e7c3f24e0f8b6a1d9f6a34bcd1"
+  "page_url": "https://<your-server>/i/a9d8b4e7c3f24e0f8b6a1d9f6a34bcd1",
+  "raw_url": "https://<your-server>/raw/image/a9d8b4e7c3f24e0f8b6a1d9f6a34bcd1"
 }
 ```
 
 You can also retrieve JSON listings of existing uploads:
 ```bash
-curl http://<your-server>/list/images
-curl http://<your-server>/list/files
+curl https://<your-server>/list/images
+curl https://<your-server>/list/files
 ```
 
 ## Developing
