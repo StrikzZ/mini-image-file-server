@@ -36,13 +36,13 @@ services:
     container_name: mini-image-file-server
     restart: unless-stopped
     environment:
-      - DATA_ROOT =
-      - TTL_DAYS =
-      - CLEANUP_INTERVAL_SECONDS =
-      - MAX_FILE_MB = 
-      - LANDINGPAGE_TITLE =
-      - ALLOWED_HOSTS = IP or Domain of your Host
-      - PORT = 8080
+      - DATA_ROOT=
+      - TTL_DAYS=
+      - CLEANUP_INTERVAL_SECONDS=
+      - MAX_FILE_MB= 
+      - LANDINGPAGE_TITLE=
+      - ALLOWED_HOSTS=IP or Domain of your Host
+      - PORT=8080
     volumes:
       - Path_to_your_persistant_data:/app/data
     expose:
