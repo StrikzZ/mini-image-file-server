@@ -22,8 +22,6 @@
 docker run -d --name mini-image-file-server \
   -e ALLOWED_HOSTS = IP or Domain of your Host \
   -e PORT = 8080 \
-  -e ICE_SECRET_READ=YourIceReadSecret \
-  -e API_TOKEN=yourTokenHere \
   -p 8080:8080 \
   -v path_to_your_persistant_data_or_volume:/app/data \
   strikzz/mini-image-file-server:latest
@@ -71,7 +69,7 @@ services:
 ## Usage
 
 Besides using the built-in web interface to upload and manage files,  
-you can also interact with the server programmatically — for example using `curl`.
+you can also interact with the server over CLI — for example using `curl`.
 
 ### Uploading a file via `curl`
 
