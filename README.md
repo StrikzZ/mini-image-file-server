@@ -69,7 +69,7 @@ services:
 ## Usage
 
 Besides using the built-in web interface to upload and manage files,  
-you can also interact with the server programmatically — for example using `curl`.
+you can also interact with the server over CLI — for example using `curl`.
 
 ### Uploading a file via `curl`
 
