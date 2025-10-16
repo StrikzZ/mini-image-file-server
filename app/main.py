@@ -228,16 +228,16 @@ async def root() -> str:
       <main>
         <div class='row'>
           <div id='drop' class='uploader'>
-            <p>Zieh Bild/Datei hierher oder <label for='file' class='btn'>Datei wählen</label></p>
-            <p class='muted'>Bilder: JPG/PNG/GIF/WEBP · Archive: ZIP/TAR/RAR/7Z · max. {MAX_FILE_MB} MB</p>
+            <p>Drag & Drop files here or <label for='file' class='btn'>Select File</label></p>
+            <p class='muted'>Images: JPG/PNG/GIF/WEBP · Files: ZIP/TAR/RAR/7Z · max. {MAX_FILE_MB} MB</p>
             <input id='file' type='file' />
             <progress id='prog' value='0' max='100' style='display:none'></progress>
           </div>
         </div>
 
         <div class='tabs'>
-          <button id='tab-img' class='tab active'>Bilder</button>
-          <button id='tab-files' class='tab'>Dateien</button>
+          <button id='tab-img' class='tab active'>Images</button>
+          <button id='tab-files' class='tab'>Files</button>
         </div>
 
         <div id='grid' class='grid'></div>
