@@ -197,7 +197,7 @@ async def root() -> str:
   .btn:focus{{outline:2px solid #cfe8ff; outline-offset:2px}}
   .success{{background:#e8f5e9;border-color:#c8e6c9}}
   body{{font-family:system-ui;margin:0;background:var(--bg);color:var(--fg)}}
-  header{{padding:1px 20px;border-bottom:1px solid #eee;background:#fff;position:sticky;top:0;display:flex;align-items:center;justify-content:space-between}}
+  header{{padding:5px 20px;border-bottom:1px solid #eee;background:#fff;position:sticky;top:0;display:flex;align-items:center;justify-content:space-between}}
   .logo{{height:60px;width:auto;border-radius:50%}}
   h1{{font-size:18px;margin:0}}
   main{{max-width:1100px;margin:0 auto;padding:20px}}
