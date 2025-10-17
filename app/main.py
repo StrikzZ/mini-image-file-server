@@ -30,6 +30,7 @@ for d in (IMAGES_DIR, FILES_DIR):
 # Pfad zum Icon (liegt neben diesem Script)
 APP_DIR = Path(__file__).parent
 ZIP_ICON_PATH = APP_DIR / "zip_icon.png"
+LOGO_PATH = APP_DIR / "mini_icon.png"
 
 TTL_DAYS = int(os.environ.get("TTL_DAYS", "14"))
 CLEANUP_INTERVAL_SECONDS = int(os.environ.get("CLEANUP_INTERVAL_SECONDS", str(6 * 60 * 60)))
@@ -119,7 +120,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="mini-image-file-server", lifespan=lifespan)
 app.add_middleware(TrustedHostMiddleware, allowed_hosts=ALLOWED_HOSTS)
-app.add_middleware(ProxyHeadersMiddleware, trusted_hosts=["10.0.0.0/8","127.0.0.1"])
+app.add_middleware(ProxyHeadersMiddleware, trusted_hosts=["10.0.0.0/8", "127.0.0.1", "172.16.0.0/12", "192.168.0.0/16"])
 
 # --- Security Headers Middleware ---
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
@@ -160,6 +161,14 @@ async def static_zip_icon():
     resp.headers["Cache-Control"] = "public, max-age=604800, immutable"
     return resp
 
+@app.get("/assets/logo.png")
+async def static_logo():
+    if not LOGO_PATH.exists():
+        raise HTTPException(404, "logo.png not found next to the script")
+    resp = FileResponse(LOGO_PATH, media_type="image/png")
+    resp.headers["Cache-Control"] = "public, max-age=604800, immutable"
+    return resp
+
 
 # -----------------
 # Landingpage mit Copy & Pagination (+ Paste + Clientgröße-Check)
@@ -169,6 +178,7 @@ async def root() -> str:
     return f"""
 <html><head><meta name='viewport' content='width=device-width, initial-scale=1'>
 <title>{html.escape(LANDINGPAGE_TITLE)}</title>
+<link rel="icon" type="image/png" href="/assets/logo.png" sizes="512x512">
 <style>
   :root{{--bg:#fafafa;--fg:#111;--muted:#666;--card:#fff;--br:12px}}
   *{{box-sizing:border-box}}
@@ -187,7 +197,8 @@ async def root() -> str:
   .btn:focus{{outline:2px solid #cfe8ff; outline-offset:2px}}
   .success{{background:#e8f5e9;border-color:#c8e6c9}}
   body{{font-family:system-ui;margin:0;background:var(--bg);color:var(--fg)}}
-  header{{padding:16px 20px;border-bottom:1px solid #eee;background:#fff;position:sticky;top:0}}
+  header{{padding:1px 20px;border-bottom:1px solid #eee;background:#fff;position:sticky;top:0;display:flex;align-items:center;justify-content:space-between}}
+  .logo{{height:60px;width:auto;border-radius:50%}}
   h1{{font-size:18px;margin:0}}
   main{{max-width:1100px;margin:0 auto;padding:20px}}
   .row{{display:flex;gap:16px;flex-wrap:wrap}}
@@ -212,7 +223,7 @@ async def root() -> str:
 </style>
 </head>
 <body>
-  <header><h1>{html.escape(LANDINGPAGE_TITLE)}</h1></header>
+  <header><h1>{html.escape(LANDINGPAGE_TITLE)}</h1><img class="logo" src="/assets/logo.png" alt="Mini logo" /></header>
   <main>
     <div class='row'>
       <div id='drop' class='uploader'>
@@ -439,12 +450,14 @@ async def image_page(request: Request, fid: str):
         if (FILES_DIR / f"{fid}.json").exists():
             return RedirectResponse(url=f"/f/{fid}", status_code=302)
         raise HTTPException(404, "not found")
-    raw = request.url_for("raw_image", fid=fid)
+    raw_path = request.app.url_path_for("raw_image", fid=fid)
+    raw_abs  = str(request.base_url).rstrip("/") + raw_path #Gives full URL (placeholder)
     created = datetime.fromtimestamp(matches[0].stat().st_mtime, timezone.utc)
     ttl = max(0, TTL_DAYS - (_now() - created).days)
     return f"""
 <html><head><meta name='viewport' content='width=device-width, initial-scale=1'>
 <title>Bild {fid}</title>
+<link rel="icon" type="image/png" href="/assets/logo.png" sizes="512x512">
 <style>
   *{{box-sizing:border-box}}
   button, input, select, textarea {{ font: inherit; }}
@@ -470,15 +483,15 @@ async def image_page(request: Request, fid: str):
 </head><body>
   <div class='wrap'>
     <p class='meta'>ID: {fid} · (Remaining: {ttl} Days)</p>
-    <img src='{raw}' alt='uploaded image'/>
+    <img src='{raw_path}' alt='uploaded image'/>
     <div class='actions'>
-      <a class='btn' href='{raw}' download>Download</a>
+      <a class='btn' href='{raw_path}' download>Download</a>
       <button id='copy' class='btn'>Copy</button>
     </div>
   </div>
 <script>
 (function(){{
-  const url=new URL({json.dumps(str(raw))},window.location.origin).href;
+  const url=new URL({json.dumps(str(raw_path))},window.location.origin).href;
   const btn=document.getElementById('copy');
   btn.onclick=async()=>{{
     try{{await navigator.clipboard.writeText(url);
@@ -501,7 +514,7 @@ async def file_page(request: Request, fid: str):
             return RedirectResponse(url=f"/i/{fid}", status_code=302)
         raise HTTPException(404, "not found")
     meta = json.loads(meta_path.read_text(encoding='utf-8'))
-    raw = request.url_for("raw_file", fid=fid)
+    raw_path = request.app.url_path_for("raw_file", fid=fid)
     real = [p for p in FILES_DIR.iterdir() if p.is_file() and p.stem == fid and p.suffix.lower() != '.json']
     if not real: raise HTTPException(404, "not found")
     p = real[0]
@@ -513,6 +526,7 @@ async def file_page(request: Request, fid: str):
     return f"""
 <html><head><meta name='viewport' content='width=device-width, initial-scale=1'>
 <title>Datei {fid}</title>
+<link rel="icon" type="image/png" href="/assets/logo.png" sizes="512x512">
 <style>
   *{{box-sizing:border-box}}
   button, input, select, textarea {{ font: inherit; }}
@@ -536,7 +550,7 @@ async def file_page(request: Request, fid: str):
   <div class='wrap'>
     <p class='meta'>ID: {fid} · {name} · {size_kb} kB · (Remaining: {ttl} Days)</p>
     <img src='{icon_url}' alt='file icon'/>
-    <p><a class='btn' href='{raw}' download>Download</a></p>
+    <p><a class='btn' href='{raw_path}' download>Download</a></p>
   </div>
 </body></html>"""
 
