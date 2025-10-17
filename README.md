@@ -1,6 +1,6 @@
 <h1 align="center">Mini Image and File Server</h1>
 <p align="center">
-  <img src="https://i.imgur.com/pT4jLcr.png" alt="Mini Image and File Server" width="800"/>
+  <img src="https://i.imgur.com/FbF2edB.png" alt="Mini Image and File Server" width="800"/>
 </p>
 
 <p align="center">
@@ -12,7 +12,7 @@
   Perfect for use with screenshot software with custom script implementation.
 </p>
 
----
+
 
 ## Installing / Getting Started
 
@@ -20,8 +20,8 @@
 
 ```bash
 docker run -d --name mini-image-file-server \
-  -e ALLOWED_HOSTS = IP or Domain of your Host \
-  -e PORT = 8080 \
+  -e ALLOWED_HOSTS=IP or Domain of your Host \
+  -e PORT=8080 \
   -p 8080:8080 \
   -v path_to_your_persistant_data_or_volume:/app/data \
   strikzz/mini-image-file-server:latest
@@ -94,6 +94,7 @@ You can also retrieve JSON listings of existing uploads:
 curl https://<your-server>/list/images
 curl https://<your-server>/list/files
 ```
+---
 
 ## Developing
 
@@ -106,14 +107,15 @@ The repo includes a full `.devcontainer` setup for Visual Studio Code.
 2. This should start the whole dev stack. If it doesn't start automatically, run `docker-compose` up manually.
 3. Adjust Compose environment as needed.
 
-## Features
+---
 
-- Lightweight **FastAPI-based file and image server** designed for easy self-hosting.  
-- Supports **uploads of images and archive files** (e.g. JPG, PNG, GIF, WEBP, ZIP, TAR, RAR, 7Z) with automatic MIME detection via **magic-bytes** - no reliance on file extensions.  
-- Generates a simple **web interface** to view uploaded images and manage files with built-in previews and download links.  
-- Includes automatic **file expiration and cleanup** after a configurable number of days (`TTL_DAYS`).  
-- Can be securely deployed **behind Auth services as well as reverse proxy services**, with trusted host and proxy-header support.  
-- Provides **JSON API endpoints** for listing, retrieving, and uploading files - suitable for integration with other apps or dashboards.  
+## ✨ Features
+
+- ⚡ Lightweight **FastAPI-based file and image server** ...
+- 🧩 Supports **image + archive uploads** (JPG, PNG, ZIP, RAR, ...)
+- 🧹 Automatic **file expiration & cleanup**
+- 🔐 Designed for use **behind Auth/Reverse Proxies**
+- 💾 Persistent storage with **Docker volume mounting**
 
 ---
 
