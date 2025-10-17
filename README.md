@@ -1,3 +1,6 @@
+<p align="center">
+  <img src="./app/mini_icon.png" alt="Mini logo" width="256" height="256">
+</p>
 <h1 align="center">Mini Image and File Server</h1>
 <p align="center">
   <img src="https://i.imgur.com/FbF2edB.png" alt="Mini Image and File Server" width="800"/>
