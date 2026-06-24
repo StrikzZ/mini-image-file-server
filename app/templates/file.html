@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+
+{% block title %}Datei {{ fid }}{% endblock %}
+
+{% block body %}
+  <div class="wrap file">
+    <p class="detail-meta">ID: {{ fid }} · {{ name }} · {{ size_kb }} kB · (Remaining: {{ ttl }} Days)</p>
+    <img class="file-icon-large" src="{{ icon_url }}" alt="file icon" />
+    <p><a class="btn" href="{{ raw_path }}" download>Download</a></p>
+  </div>
+{% endblock %}

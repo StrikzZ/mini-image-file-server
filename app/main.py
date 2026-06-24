@@ -3,7 +3,6 @@ import uuid
 import asyncio
 import json
 import mimetypes
-import html
 import re
 import math
 from urllib.parse import quote
@@ -14,6 +13,8 @@ from pathlib import Path
 import filetype
 from fastapi import FastAPI, File, UploadFile, HTTPException, Request, Query
 from fastapi.responses import HTMLResponse, FileResponse, JSONResponse, RedirectResponse, PlainTextResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
 from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.middleware.trustedhost import TrustedHostMiddleware
@@ -27,10 +28,17 @@ FILES_DIR = DATA_ROOT / "files"
 for d in (IMAGES_DIR, FILES_DIR):
     d.mkdir(parents=True, exist_ok=True)
 
-# Pfad zum Icon (liegt neben diesem Script)
+# Projektpfade (Standard-Layout: static/ und templates/ neben main.py)
 APP_DIR = Path(__file__).parent
-ZIP_ICON_PATH = APP_DIR / "zip_icon.png"
-LOGO_PATH = APP_DIR / "mini_icon.png"
+STATIC_DIR = APP_DIR / "static"
+TEMPLATES_DIR = APP_DIR / "templates"
+
+# -----------------
+# Template-Engine
+# -----------------
+# Jinja2 ueber FastAPIs Jinja2Templates. Auto-Escaping ist standardmaessig aktiv,
+# daher muessen Werte NICHT mehr manuell mit html.escape() behandelt werden.
+templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 
 TTL_DAYS = int(os.environ.get("TTL_DAYS", "14"))
 CLEANUP_INTERVAL_SECONDS = int(os.environ.get("CLEANUP_INTERVAL_SECONDS", str(6 * 60 * 60)))
@@ -153,208 +161,21 @@ app.add_middleware(SecurityHeadersMiddleware)
 # -----------------
 # Static Assets
 # -----------------
-@app.get("/assets/zip_icon.png")
-async def static_zip_icon():
-    if not ZIP_ICON_PATH.exists():
-        raise HTTPException(404, "zip_icon.png not found next to the script")
-    resp = FileResponse(ZIP_ICON_PATH, media_type="image/png")
-    resp.headers["Cache-Control"] = "public, max-age=604800, immutable"
-    return resp
-
-@app.get("/assets/logo.png")
-async def static_logo():
-    if not LOGO_PATH.exists():
-        raise HTTPException(404, "logo.png not found next to the script")
-    resp = FileResponse(LOGO_PATH, media_type="image/png")
-    resp.headers["Cache-Control"] = "public, max-age=604800, immutable"
-    return resp
+# Alles unter static/ (css, js, img) wird direkt von StaticFiles ausgeliefert.
+# Erreichbar unter /static/... und in Templates via url_for('static', path='...').
+app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
 
 # -----------------
 # Landingpage mit Copy & Pagination (+ Paste + Clientgröße-Check)
 # -----------------
 @app.get("/", response_class=HTMLResponse)
-async def root() -> str:
-    return f"""
-<html><head><meta name='viewport' content='width=device-width, initial-scale=1'>
-<title>{html.escape(LANDINGPAGE_TITLE)}</title>
-<link rel="icon" type="image/png" href="/assets/logo.png" sizes="512x512">
-<style>
-  :root{{--bg:#fafafa;--fg:#111;--muted:#666;--card:#fff;--br:12px}}
-  *{{box-sizing:border-box}}
-  button, input, select, textarea {{ font: inherit; }}
-  .btn{{
-    display:inline-flex; align-items:center; justify-content:center;
-    box-sizing:border-box;
-    height:32px; padding:0 12px;
-    border:1px solid #ddd; border-radius:10px;
-    background:#fff; color:inherit; text-decoration:none;
-    font-size:12px; line-height:1; font-family: inherit;
-    -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
-    cursor:pointer; vertical-align:middle;
-    -webkit-appearance:none; appearance:none;
-  }}
-  .btn:focus{{outline:2px solid #cfe8ff; outline-offset:2px}}
-  .success{{background:#e8f5e9;border-color:#c8e6c9}}
-  body{{font-family:system-ui;margin:0;background:var(--bg);color:var(--fg)}}
-  header{{padding:5px 20px;border-bottom:1px solid #eee;background:#fff;position:sticky;top:0;display:flex;align-items:center;justify-content:space-between}}
-  .logo{{height:60px;width:auto;border-radius:50%}}
-  h1{{font-size:18px;margin:0}}
-  main{{max-width:1100px;margin:0 auto;padding:20px}}
-  .row{{display:flex;gap:16px;flex-wrap:wrap}}
-  .uploader{{flex:1 1 360px;background:var(--card);border:2px dashed #ddd;border-radius:var(--br);padding:18px;min-height:140px;display:flex;flex-direction:column;justify-content:center;align-items:center}}
-  .uploader.drag{{border-color:#aaa;background:#f7f7f7}}
-  .uploader input[type=file]{{display:none}}
-  .muted{{color:var(--muted);font-size:14px}}
-  .tabs{{display:flex;gap:8px;margin-top:18px}}
-  .tab{{padding:6px 10px;border:1px solid #ddd;border-radius:8px;background:#fff;cursor:pointer}}
-  .tab.active{{background:#111;color:#fff;border-color:#111}}
-  .grid{{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px;margin-top:14px}}
-  .card{{background:var(--card);border:1px solid #eee;border-radius:var(--br);overflow:hidden}}
-  .thumb{{aspect-ratio:1/1;display:block;width:100%;height:auto;object-fit:cover;background:#eee}}
-  .caption{{padding:6px 10px;font-size:12px;color:#333;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}
-  .meta{{padding:8px 10px;display:flex;gap:8px;justify-content:space-between;align-items:center;flex-wrap:wrap}}
-  .meta-left{{font-size:12px;color:#555}}
-  .actions{{display:flex; gap:4px}}
-  progress{{width:100%;height:10px;margin-top:8px}}
-  .pager{{display:flex;gap:8px;align-items:center;margin-top:16px}}
-  .pager .info{{font-size:12px;color:#555}}
-  .pager .btn[disabled]{{opacity:.5;cursor:not-allowed}}
-</style>
-</head>
-<body>
-  <header><h1>{html.escape(LANDINGPAGE_TITLE)}</h1><img class="logo" src="/assets/logo.png" alt="Mini logo" /></header>
-  <main>
-    <div class='row'>
-      <div id='drop' class='uploader'>
-        <p>Drag & Drop files here or <label for='file' class='btn'>Select File</label></p>
-        <p class='muted'>Images: JPG/PNG/GIF/WEBP · Files: ZIP/TAR/RAR/7Z · max. {MAX_FILE_MB} MB</p>
-        <input id='file' type='file' />
-        <progress id='prog' value='0' max='100' style='display:none'></progress>
-      </div>
-    </div>
-    <div class='tabs'>
-      <button id='tab-img' class='tab active'>Images</button>
-      <button id='tab-files' class='tab'>Files</button>
-    </div>
-    <div id='grid' class='grid'></div>
-    <div class='pager'>
-      <button id='prev' class='btn'>Prev</button>
-      <button id='next' class='btn'>Next</button>
-      <span id='pager-info' class='info'></span>
-    </div>
-  </main>
-
-<script>
-const grid=document.getElementById('grid');
-const drop=document.getElementById('drop');
-const fileInput=document.getElementById('file');
-const prog=document.getElementById('prog');
-const tabImg=document.getElementById('tab-img');
-const tabFiles=document.getElementById('tab-files');
-const btnPrev=document.getElementById('prev');
-const btnNext=document.getElementById('next');
-const pagerInfo=document.getElementById('pager-info');
-let current='images';
-const PER_PAGE=15;
-const page={{ images:1, files:1 }};
-let totalPages={{ images:1, files:1 }};
-let totals={{ images:0, files:0 }};
-
-// Clientseitige Maxgröße (aus dem Serverwert)
-const MAX_MB = {MAX_FILE_MB};
-const MAX_BYTES = MAX_MB*1024*1024;
-
-tabImg.onclick=()=>{{current='images';tabImg.classList.add('active');tabFiles.classList.remove('active');fetchList();}};
-tabFiles.onclick=()=>{{current='files';tabFiles.classList.add('active');tabImg.classList.remove('active');fetchList();}};
-btnPrev.onclick=()=>{{if(page[current]>1){{page[current]--;fetchList();}}}};
-btnNext.onclick=()=>{{if(page[current]<totalPages[current]){{page[current]++;fetchList();}}}};
-
-function updatePager(meta){{totals[current]=meta.total??0;totalPages[current]=meta.total_pages??1;
-const p=meta.page??1;const per=meta.per_page??PER_PAGE;const start=(p-1)*per+1;const end=Math.min(p*per,totals[current]);
-pagerInfo.textContent=totals[current]?`Page ${{p}}/${{totalPages[current]}} · ${{start}}-${{end}} of ${{totals[current]}}`:'No items';
-btnPrev.disabled=(p<=1);btnNext.disabled=(p>=totalPages[current]);}}
-
-async function fetchList(){{
-  const p=page[current];
-  const url=current==='images'?`/list/images?page=${{p}}&limit=${{PER_PAGE}}`:`/list/files?page=${{p}}&limit=${{PER_PAGE}}`;
-  const r=await fetch(url);const data=await r.json();renderGrid(data.items,current);updatePager(data);
-}}
-
-function renderGrid(items,kind){{grid.innerHTML='';for(const it of items){{
-  const card=document.createElement('div');card.className='card';
-  if(kind==='images'){{const img=document.createElement('img');img.className='thumb';img.loading='lazy';img.src=it.raw_url;img.alt=it.id;card.append(img);
-    const meta=document.createElement('div');meta.className='meta';
-    const left=document.createElement('span');left.className='meta-left';left.textContent=timeAgo(new Date(it.created));
-    const actions=document.createElement('div');actions.className='actions';
-    const aOpen=document.createElement('a');aOpen.href=it.page_url;aOpen.target='_blank';aOpen.className='btn';aOpen.textContent='Open';
-    const btnCopy=document.createElement('button');btnCopy.className='btn';btnCopy.textContent='Copy';
-    btnCopy.onclick=async()=>{{const url=new URL(it.raw_url,window.location.origin).href;
-      try{{await navigator.clipboard.writeText(url);btnCopy.textContent='Copied!';btnCopy.classList.add('success');
-        setTimeout(()=>{{btnCopy.textContent='Copy';btnCopy.classList.remove('success');}},1200);
-      }}catch(e){{const ta=document.createElement('textarea');ta.value=url;document.body.appendChild(ta);
-        ta.select();document.execCommand('copy');document.body.removeChild(ta);
-        btnCopy.textContent='Copied!';setTimeout(()=>{{btnCopy.textContent='Copy';}},1200);}}
-    }};
-    actions.append(aOpen,btnCopy);meta.append(left,actions);card.append(meta);
-  }}else{{const img=document.createElement('img');img.className='thumb';img.loading='lazy';
-    img.src='/assets/zip_icon.png';img.alt=it.original_name||it.id;card.append(img);
-    const cap=document.createElement('div');cap.className='caption';cap.title=it.original_name||it.id;cap.textContent=it.original_name||it.id;card.append(cap);
-    const meta=document.createElement('div');meta.className='meta';
-    const left=document.createElement('span');left.className='meta-left';left.textContent=timeAgo(new Date(it.created));
-    const a=document.createElement('a');a.href=it.page_url;a.target='_blank';a.className='btn';a.textContent='Open';
-    meta.append(left,a);card.append(meta);}}
-  grid.append(card);}}}}
-
-function timeAgo(date){{const s=Math.floor((Date.now()-date.getTime())/1000);
-const i=Math.floor(s/60);const h=Math.floor(i/60);const d=Math.floor(h/24);
-if(s<60)return s+'s';if(i<60)return i+'m';if(h<24)return h+'h';return d+'d';}}
-
-// Clientseitige Größenprüfung + Upload
-function uploadFile(file){{
-  if (file.size > MAX_BYTES) {{
-    alert(`Datei ist größer als ${{MAX_MB}} MB`);
-    return Promise.reject('too large');
-  }}
-  const fd=new FormData();fd.append('file',file);
-  prog.style.display='block';prog.value=0;
-  return new Promise((res,rej)=>{{const xhr=new XMLHttpRequest();xhr.open('POST','/upload');
-  xhr.upload.onprogress=e=>{{if(e.lengthComputable)prog.value=(e.loaded/e.total)*100;}};xhr.onload=()=>{{prog.style.display='none';prog.value=0;if(xhr.status>=200&&xhr.status<300)res(JSON.parse(xhr.responseText));else rej(xhr.responseText);}};
-  xhr.onerror=()=>{{prog.style.display='none';rej('network error');}};xhr.send(fd);}});
-}}
-
-['dragenter','dragover'].forEach(ev=>drop.addEventListener(ev,e=>{{e.preventDefault();e.stopPropagation();drop.classList.add('drag');}}));
-['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{{e.preventDefault();e.stopPropagation();drop.classList.remove('drag');}}));
-drop.addEventListener('drop',async(e)=>{{const f=e.dataTransfer.files;if(!f||!f.length)return;
-try{{await uploadFile(f[0]);page[current]=1;await fetchList();}}catch(err){{/* handled */}}}});
-fileInput.addEventListener('change',async()=>{{if(!fileInput.files||!fileInput.files.length)return;
-try{{await uploadFile(fileInput.files[0]);fileInput.value='';page[current]=1;await fetchList();}}catch(err){{/* handled */}}}});
-
-// Paste-Support (Strg+V) + gleiche Größenprüfung
-document.addEventListener('paste', async (e) => {{
-  const dt = e.clipboardData || window.clipboardData;
-  if (!dt) return;
-  const items = dt.items || [];
-  const files = [];
-  for (const item of items) {{
-    if (item && item.kind === 'file') {{
-      const f = item.getAsFile();
-      if (f && f.size) files.push(f);
-    }}
-  }}
-  if (!files.length) return;
-  e.preventDefault();
-  try {{
-    await uploadFile(files[0]);
-    page[current]=1;
-    await fetchList();
-  }} catch (err) {{
-    /* handled */
-  }}
-}});
-
-fetchList();
-</script></body></html>"""
+async def root(request: Request):
+    return templates.TemplateResponse(
+        request,
+        "index.html",
+        {"title": LANDINGPAGE_TITLE, "max_file_mb": MAX_FILE_MB},
+    )
 
 
 # -----------------
@@ -454,56 +275,16 @@ async def image_page(request: Request, fid: str):
     raw_abs  = str(request.base_url).rstrip("/") + raw_path #Gives full URL (placeholder)
     created = datetime.fromtimestamp(matches[0].stat().st_mtime, timezone.utc)
     ttl = max(0, TTL_DAYS - (_now() - created).days)
-    return f"""
-<html><head><meta name='viewport' content='width=device-width, initial-scale=1'>
-<title>Bild {fid}</title>
-<link rel="icon" type="image/png" href="/assets/logo.png" sizes="512x512">
-<style>
-  *{{box-sizing:border-box}}
-  button, input, select, textarea {{ font: inherit; }}
-  body{{font-family:system-ui;margin:1rem}}
-  .wrap{{max-width:900px;margin:0 auto}}
-  img{{max-width:100%;height:auto;display:block;margin:0 auto}}
-  .meta{{color:#666;font-size:.9em;margin:.5rem 0 1rem}}
-  .btn{{
-    display:inline-flex; align-items:center; justify-content:center;
-    box-sizing:border-box;
-    height:32px; padding:0 12px;
-    border:1px solid #ddd; border-radius:10px;
-    background:#fff; color:inherit; text-decoration:none;
-    font-size:12px; line-height:1; font-family: inherit;
-    -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
-    cursor:pointer; vertical-align:middle;
-    -webkit-appearance:none; appearance:none;
-  }}
-  .btn:focus{{outline:2px solid #cfe8ff; outline-offset:2px}}
-  .actions{{display:flex; gap:4px; margin-top:12px}}
-  .success{{background:#e8f5e9;border-color:#c8e6c9}}
-</style>
-</head><body>
-  <div class='wrap'>
-    <p class='meta'>ID: {fid} · (Remaining: {ttl} Days)</p>
-    <img src='{raw_path}' alt='uploaded image'/>
-    <div class='actions'>
-      <a class='btn' href='{raw_path}' download>Download</a>
-      <button id='copy' class='btn'>Copy</button>
-    </div>
-  </div>
-<script>
-(function(){{
-  const url=new URL({json.dumps(str(raw_path))},window.location.origin).href;
-  const btn=document.getElementById('copy');
-  btn.onclick=async()=>{{
-    try{{await navigator.clipboard.writeText(url);
-      btn.textContent='Copied!';btn.classList.add('success');
-      setTimeout(()=>{{btn.textContent='Copy';btn.classList.remove('success');}},1200);
-    }}catch(e){{const ta=document.createElement('textarea');
-      ta.value=url;document.body.appendChild(ta);ta.select();
-      document.execCommand('copy');document.body.removeChild(ta);
-      btn.textContent='Copied!';setTimeout(()=>{{btn.textContent='Copy';}},1200);}}
-  }};
-}})();
-</script></body></html>"""
+    return templates.TemplateResponse(
+        request,
+        "image.html",
+        {
+            "title": LANDINGPAGE_TITLE,
+            "fid": fid,
+            "ttl": ttl,
+            "raw_path": str(raw_path),
+        },
+    )
 
 @app.get("/f/{fid}", response_class=HTMLResponse)
 async def file_page(request: Request, fid: str):
@@ -520,39 +301,22 @@ async def file_page(request: Request, fid: str):
     p = real[0]
     created = datetime.fromtimestamp(p.stat().st_mtime, timezone.utc)
     ttl = max(0, TTL_DAYS - (_now() - created).days)
-    icon_url = "/assets/zip_icon.png"
-    name = html.escape(meta.get('original_name') or fid)
+    icon_url = "/static/img/zip_icon.png"
+    name = meta.get('original_name') or fid
     size_kb = max(1, (p.stat().st_size // 1024))
-    return f"""
-<html><head><meta name='viewport' content='width=device-width, initial-scale=1'>
-<title>Datei {fid}</title>
-<link rel="icon" type="image/png" href="/assets/logo.png" sizes="512x512">
-<style>
-  *{{box-sizing:border-box}}
-  button, input, select, textarea {{ font: inherit; }}
-  body{{font-family:system-ui;margin:1rem}}
-  .wrap{{max-width:900px;margin:0 auto}}
-  img{{max-width:100%;height:auto;display:block;margin:0 auto}}
-  .meta{{color:#666;font-size:.9em;margin:.5rem 0 1rem}}
-  .btn{{
-    display:inline-flex; align-items:center; justify-content:center;
-    box-sizing:border-box;
-    height:32px; padding:0 12px;
-    border:1px solid #ddd; border-radius:10px;
-    background:#fff; color:inherit; text-decoration:none;
-    font-size:12px; line-height:1; font-family: inherit;
-    -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
-    cursor:pointer; vertical-align:middle;
-    -webkit-appearance:none; appearance:none;
-  }}
-</style>
-</head><body>
-  <div class='wrap'>
-    <p class='meta'>ID: {fid} · {name} · {size_kb} kB · (Remaining: {ttl} Days)</p>
-    <img src='{icon_url}' alt='file icon'/>
-    <p><a class='btn' href='{raw_path}' download>Download</a></p>
-  </div>
-</body></html>"""
+    return templates.TemplateResponse(
+        request,
+        "file.html",
+        {
+            "title": LANDINGPAGE_TITLE,
+            "fid": fid,
+            "name": name,
+            "size_kb": size_kb,
+            "ttl": ttl,
+            "icon_url": icon_url,
+            "raw_path": str(raw_path),
+        },
+    )
 
 # -----------------
 # Raw Data

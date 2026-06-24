@@ -1,0 +1,124 @@
+/* ============================================================
+   base.css — globale Styles fuer den Mini Image & File Server
+   Geladen auf allen Seiten via <link> aus base.html.
+   ============================================================ */
+
+/* --- Theme-Variablen (Light) --- */
+:root{
+  --bg:#fafafa;--fg:#111;--muted:#666;--card:#fff;--br:12px;
+  --border:#ddd;--border-soft:#eee;--header-bg:#fff;--drop-bg:#f7f7f7;
+  --tab-bg:#fff;--tab-active-bg:#111;--tab-active-fg:#fff;--thumb-bg:#eee;
+  --btn-bg:#fff;--success-bg:#e8f5e9;--success-border:#c8e6c9;--caption-fg:#333;
+}
+/* --- Theme-Variablen (Dark) --- */
+:root[data-theme="dark"]{
+  --bg:#15171a;--fg:#e8e8e8;--muted:#9aa0a6;--card:#1e2125;--br:12px;
+  --border:#33373d;--border-soft:#2a2d31;--header-bg:#1e2125;--drop-bg:#23262b;
+  --tab-bg:#23262b;--tab-active-bg:#e8e8e8;--tab-active-fg:#15171a;--thumb-bg:#2a2d31;
+  --btn-bg:#23262b;--success-bg:#1f3a24;--success-border:#2e5a36;--caption-fg:#cfcfcf;
+}
+
+/* --- Grundlagen --- */
+*{box-sizing:border-box}
+button, input, select, textarea { font: inherit; }
+body{font-family:system-ui;margin:0;background:var(--bg);color:var(--fg)}
+
+/* --- Buttons --- */
+.btn{
+  display:inline-flex; align-items:center; justify-content:center;
+  box-sizing:border-box;
+  height:32px; padding:0 12px;
+  border:1px solid var(--border); border-radius:10px;
+  background:var(--btn-bg); color:inherit; text-decoration:none;
+  font-size:12px; line-height:1; font-family: inherit;
+  -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
+  cursor:pointer; vertical-align:middle;
+  -webkit-appearance:none; appearance:none;
+}
+.btn:focus{outline:2px solid #cfe8ff; outline-offset:2px}
+.btn.icon{padding:0 10px}
+.success{background:var(--success-bg);border-color:var(--success-border)}
+
+/* --- Header (alle Seiten) --- */
+header{padding:5px 20px;border-bottom:1px solid var(--border-soft);background:var(--header-bg);position:sticky;top:0;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.head-left{display:flex;align-items:center;gap:12px}
+.logo{height:60px;width:auto;border-radius:50%}
+h1{font-size:18px;margin:0}
+
+/* --- Theme-Switch (Slider) --- */
+.theme-switch{
+  --w:64px; --h:32px; --pad:3px; --thumb:26px;
+  width:var(--w); height:var(--h); padding:0; border:none; background:none;
+  cursor:pointer; display:inline-flex; align-items:center;
+  -webkit-appearance:none; appearance:none; flex:0 0 auto;
+}
+.theme-switch:focus-visible{outline:2px solid #cfe8ff; outline-offset:3px; border-radius:999px}
+.theme-switch .track{
+  position:relative; width:var(--w); height:var(--h); border-radius:999px;
+  background:#cdd0d6; border:1px solid var(--border);
+  transition:background .25s ease, border-color .25s ease;
+  display:block; box-sizing:border-box;
+}
+:root[data-theme="dark"] .theme-switch .track{ background:#3a3f46; }
+.theme-switch .thumb{
+  position:absolute; top:50%; left:var(--pad);
+  width:var(--thumb); height:var(--thumb); border-radius:50%;
+  background:#fff; box-shadow:0 1px 3px rgba(0,0,0,.4);
+  transform:translateY(-50%);
+  transition:transform .25s cubic-bezier(.4,0,.2,1), background .25s ease;
+  z-index:2;
+}
+:root[data-theme="dark"] .theme-switch .thumb{
+  background:#15171a;
+  transform:translateY(-50%) translateX(calc(var(--w) - var(--thumb) - var(--pad)*2 - 2px));
+}
+.theme-switch .icon{
+  position:absolute; top:50%; transform:translateY(-50%);
+  font-size:12px; line-height:1; z-index:1; transition:opacity .25s ease;
+}
+.theme-switch .sun{ left:8px; opacity:.55; }
+.theme-switch .moon{ right:8px; opacity:1; }
+:root[data-theme="dark"] .theme-switch .sun{ opacity:1; }
+:root[data-theme="dark"] .theme-switch .moon{ opacity:.55; }
+
+/* ============================================================
+   Seite: index (Landing / Upload + Uebersicht)
+   ============================================================ */
+main{max-width:1100px;margin:0 auto;padding:20px}
+.row{display:flex;gap:16px;flex-wrap:wrap}
+.uploader{flex:1 1 360px;background:var(--card);border:2px dashed var(--border);border-radius:var(--br);padding:18px;min-height:140px;display:flex;flex-direction:column;justify-content:center;align-items:center}
+.uploader.drag{border-color:var(--muted);background:var(--drop-bg)}
+.uploader input[type=file]{display:none}
+.muted{color:var(--muted);font-size:14px}
+.tabs{display:flex;gap:8px;margin-top:18px}
+.tab{padding:6px 10px;border:1px solid var(--border);border-radius:8px;background:var(--tab-bg);color:inherit;cursor:pointer}
+.tab.active{background:var(--tab-active-bg);color:var(--tab-active-fg);border-color:var(--tab-active-bg)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px;margin-top:14px}
+.card{background:var(--card);border:1px solid var(--border-soft);border-radius:var(--br);overflow:hidden}
+.thumb{aspect-ratio:1/1;display:block;width:100%;height:auto;object-fit:cover;background:var(--thumb-bg)}
+.thumb.file-icon{object-fit:contain;padding:24px;background:var(--thumb-bg)}
+.caption{padding:6px 10px;font-size:12px;color:var(--caption-fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.meta{padding:8px 10px;display:flex;gap:8px;justify-content:space-between;align-items:center;flex-wrap:wrap}
+.meta-left{font-size:12px;color:var(--muted)}
+.actions{display:flex; gap:4px}
+progress{width:100%;height:10px;margin-top:8px}
+.pager{display:flex;gap:8px;align-items:center;margin-top:16px}
+.pager .info{font-size:12px;color:var(--muted)}
+.pager .btn[disabled]{opacity:.5;cursor:not-allowed}
+
+/* ============================================================
+   Seiten: image (/i) und file (/f) — Detailansicht
+   ============================================================ */
+.wrap{max-width:900px;margin:0 auto;padding:1rem}
+.wrap img{max-width:100%;height:auto;display:block;margin:0 auto}
+.detail-meta{color:var(--muted);font-size:.9em;margin:.5rem 0 1rem}
+.detail-actions{display:flex; gap:4px; margin-top:12px}
+/* File-Seite: Icon begrenzen, damit der Download-Button ohne Scrollen sichtbar bleibt */
+.wrap.file{text-align:center}
+img.file-icon-large{
+  width:auto;height:auto;
+  max-width:240px;
+  max-height:40vh;
+  display:block;margin:1rem auto;
+  object-fit:contain;
+}

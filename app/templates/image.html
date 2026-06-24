@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block title %}Bild {{ fid }}{% endblock %}
+
+{% block body %}
+  <div class="wrap">
+    <p class="detail-meta">ID: {{ fid }} · (Remaining: {{ ttl }} Days)</p>
+    <img src="{{ raw_path }}" alt="uploaded image" />
+    <div class="detail-actions">
+      <a class="btn" href="{{ raw_path }}" download>Download</a>
+      <button id="copy" class="btn">Copy</button>
+    </div>
+  </div>
+{% endblock %}
+
+{% block scripts %}
+  <script>
+  (function(){
+    const url=new URL({{ raw_path | tojson }}, window.location.origin).href;
+    const btn=document.getElementById('copy');
+    btn.onclick=async()=>{
+      try{await navigator.clipboard.writeText(url);
+        btn.textContent='Copied!';btn.classList.add('success');
+        setTimeout(()=>{btn.textContent='Copy';btn.classList.remove('success');},1200);
+      }catch(e){const ta=document.createElement('textarea');
+        ta.value=url;document.body.appendChild(ta);ta.select();
+        document.execCommand('copy');document.body.removeChild(ta);
+        btn.textContent='Copied!';setTimeout(()=>{btn.textContent='Copy';},1200);}
+    };
+  })();
+  </script>
+{% endblock %}
